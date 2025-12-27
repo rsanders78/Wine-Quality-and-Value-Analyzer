@@ -7,6 +7,9 @@ let currentStream = null;
 let analysisResults = null;
 let analysisHistory = [];
 
+// Cloudflare Worker URL - this connects to your secure AI backend
+const WORKER_URL = 'https://muddy-disk-ef61.rsanders.workers.dev';
+
 // Initialize app
 document.addEventListener('DOMContentLoaded', function() {
     loadHistory();
@@ -241,7 +244,7 @@ function updateActionButtons() {
     document.getElementById('analyze-button').disabled = capturedPhotos.length === 0;
 }
 
-// Analysis Function
+// Analysis Function - NOW USES REAL AI VIA CLOUDFLARE WORKER
 async function analyzePhotos() {
     if (capturedPhotos.length === 0) return;
     
@@ -253,170 +256,44 @@ async function analyzePhotos() {
     
     showScreen('loading-screen');
     
-    // Simulate AI analysis (in production, this would call Anthropic API)
-    setTimeout(() => {
-        analysisResults = generateMockResults();
+    try {
+        // Get learning data from localStorage
+        const learningData = JSON.parse(localStorage.getItem('wineLearningData') || '[]');
+        
+        // Call Cloudflare Worker which securely calls Anthropic API
+        const response = await fetch(WORKER_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                photos: capturedPhotos,
+                priceRanges: selectedPriceRanges,
+                adventureLevel: adventureLevel,
+                userPreferences: {
+                    learningData: learningData
+                }
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to analyze wine menu');
+        }
+        
+        analysisResults = await response.json();
+        
+        // Add price ranges and adventure level to results
+        analysisResults.priceRanges = selectedPriceRanges;
+        analysisResults.adventureLevel = adventureLevel;
+        
         displayResults();
         showScreen('results-screen');
-    }, 3000);
-}
-
-function generateMockResults() {
-    // This is mock data - in production, you'd call the Anthropic API here
-    // with the wine menu images and get real analysis
-    
-    const wineDatabase = getWineRecommendations();
-    
-    return {
-        timestamp: new Date().toISOString(),
-        priceRanges: selectedPriceRanges,
-        adventureLevel: adventureLevel,
-        topFive: wineDatabase.slice(0, 5),
-        honorableMentions: wineDatabase.slice(5, 10)
-    };
-}
-
-function getWineRecommendations() {
-    // Mock wine database - in production, this comes from AI analysis
-    const safeWines = [
-        {
-            name: "Domaine de la Romanée-Conti, Échezeaux",
-            vintage: 2018,
-            region: "Burgundy, France",
-            varietal: "Pinot Noir",
-            price: 450,
-            reasons: [
-                "Exceptional 2018 vintage with perfect growing conditions",
-                "From one of Burgundy's most prestigious producers",
-                "Significantly underpriced compared to other DRC wines"
-            ]
-        },
-        {
-            name: "Louis Michel et Fils, Chablis Grand Cru 'Les Clos'",
-            vintage: 2019,
-            region: "Chablis, France",
-            varietal: "Chardonnay",
-            price: 85,
-            reasons: [
-                "Outstanding 2019 vintage rated 95/100 by experts",
-                "Premier Grand Cru vineyard with exceptional terroir",
-                "Excellent value for this quality level"
-            ]
-        },
-        {
-            name: "Marcel Lapierre, Morgon",
-            vintage: 2020,
-            region: "Beaujolais, France",
-            varietal: "Gamay",
-            price: 42,
-            reasons: [
-                "Iconic natural wine producer with cult following",
-                "2020 was an exceptional year in Beaujolais",
-                "Well below market value for this producer"
-            ]
-        },
-        {
-            name: "Hirsch Vineyards, Pinot Noir 'The Bohan-Dillon'",
-            vintage: 2019,
-            region: "Sonoma Coast, California",
-            varietal: "Pinot Noir",
-            price: 95,
-            reasons: [
-                "Top-rated Sonoma Coast producer (96 points Wine Advocate)",
-                "Cool climate site produces elegant, Burgundian-style wine",
-                "Exceptional value compared to similar quality Burgundies"
-            ]
-        },
-        {
-            name: "Domaine Vacheron, Sancerre 'Les Romains'",
-            vintage: 2021,
-            region: "Loire Valley, France",
-            varietal: "Sauvignon Blanc",
-            price: 55,
-            reasons: [
-                "Single vineyard from one of Sancerre's finest estates",
-                "Perfect 2021 vintage with ideal balance",
-                "Premier cru quality at village wine pricing"
-            ]
-        }
-    ];
-    
-    const curiousWines = [
-        {
-            name: "Foradori, Teroldego Rotaliano",
-            vintage: 2019,
-            region: "Trentino, Italy",
-            varietal: "Teroldego",
-            price: 38,
-            reasons: [
-                "Medium-bodied elegant red similar to Pinot Noir",
-                "Biodynamic producer with exceptional reputation",
-                "Rare indigenous varietal, excellent value"
-            ]
-        },
-        {
-            name: "Envínate, Táganan Blanco",
-            vintage: 2020,
-            region: "Canary Islands, Spain",
-            varietal: "Listán Blanco",
-            price: 45,
-            reasons: [
-                "Crisp, mineral-driven style like top Chablis",
-                "Volcanic soils add unique character",
-                "Cult Spanish producer, highly allocated"
-            ]
-        }
-    ];
-    
-    const adventurousWines = [
-        {
-            name: "Gut Oggau, 'Theodora'",
-            vintage: 2020,
-            region: "Burgenland, Austria",
-            varietal: "Grüner Veltliner blend",
-            price: 52,
-            reasons: [
-                "Natural wine with exceptional purity and energy",
-                "From top Austrian biodynamic estate",
-                "More complex than standard Grüner"
-            ]
-        },
-        {
-            name: "Ameztoi, Rubentis Rosé",
-            vintage: 2021,
-            region: "Getaria, Spain",
-            varietal: "Hondarrabi Zuri/Beltza",
-            price: 28,
-            reasons: [
-                "Light, refreshing style between rosé and light red",
-                "Rare Basque indigenous grapes",
-                "Exceptional quality-to-price ratio"
-            ]
-        }
-    ];
-    
-    let recommendations = [];
-    
-    if (adventureLevel === 'safe') {
-        recommendations = [...safeWines];
-    } else if (adventureLevel === 'curious') {
-        recommendations = [...safeWines.slice(0, 3), ...curiousWines, ...safeWines.slice(3)];
-    } else {
-        recommendations = [...safeWines.slice(0, 2), ...curiousWines, ...adventurousWines, ...safeWines.slice(2)];
+        
+    } catch (error) {
+        console.error('Analysis error:', error);
+        alert('Failed to analyze wine menu. Please try again. Make sure you\'ve deployed your Cloudflare Worker and updated the WORKER_URL in app.js.');
+        showScreen('camera-screen');
     }
-    
-    // Filter by price range
-    recommendations = recommendations.filter(wine => {
-        return selectedPriceRanges.some(range => {
-            if (range === '0-100') return wine.price <= 100;
-            if (range === '100-200') return wine.price > 100 && wine.price <= 200;
-            if (range === '200-500') return wine.price > 200 && wine.price <= 500;
-            if (range === '500+') return wine.price > 500;
-            return false;
-        });
-    });
-    
-    return recommendations;
 }
 
 function displayResults() {
@@ -436,7 +313,7 @@ function displayResults() {
     container.appendChild(topSection);
     
     // Honorable Mentions
-    if (analysisResults.honorableMentions.length > 0) {
+    if (analysisResults.honorableMentions && analysisResults.honorableMentions.length > 0) {
         const mentionsSection = document.createElement('div');
         mentionsSection.className = 'result-section';
         mentionsSection.innerHTML = '<h3 class="section-title">Other Notable Choices</h3>';
@@ -476,10 +353,10 @@ function createWineCard(wine, rank, showReasons) {
     
     html += `
         <div class="wine-rating">
-            <button class="rating-button" onclick="rateWine('${wine.name}', 1)">⭐</button>
-            <button class="rating-button" onclick="rateWine('${wine.name}', 2)">⭐⭐</button>
-            <button class="rating-button" onclick="rateWine('${wine.name}', 3)">⭐⭐⭐</button>
-            <button class="rating-button" onclick="rateWine('${wine.name}', 0)">👎</button>
+            <button class="rating-button" onclick="rateWine('${wine.name.replace(/'/g, "\\'")}', 1)">⭐</button>
+            <button class="rating-button" onclick="rateWine('${wine.name.replace(/'/g, "\\'")}', 2)">⭐⭐</button>
+            <button class="rating-button" onclick="rateWine('${wine.name.replace(/'/g, "\\'")}', 3)">⭐⭐⭐</button>
+            <button class="rating-button" onclick="rateWine('${wine.name.replace(/'/g, "\\'")}', 0)">👎</button>
         </div>
     `;
     
