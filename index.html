@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#000000">
+    <title>Wine Value Analyzer</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="app">
+        <!-- Welcome Screen -->
+        <div id="welcome-screen" class="screen active">
+            <div class="logo-container">
+                <h1 class="app-title">Wine<br>Value<br>Analyzer</h1>
+                <p class="subtitle">Discover exceptional wines<br>at the best prices</p>
+            </div>
+            <button class="primary-button" onclick="startAnalysis()">Begin Analysis</button>
+            <button class="secondary-button" onclick="showHistory()">View History</button>
+        </div>
+
+        <!-- Price Selection Screen -->
+        <div id="price-screen" class="screen">
+            <div class="screen-header">
+                <button class="back-button" onclick="goBack('welcome-screen')">←</button>
+                <h2>Select Price Range</h2>
+            </div>
+            <div class="content-area">
+                <p class="instruction-text">Choose one or more price ranges</p>
+                <div class="toggle-group">
+                    <button class="toggle-button" data-range="0-100" onclick="togglePrice(this)">
+                        <span class="range-label">£0 - £100</span>
+                        <span class="checkmark">✓</span>
+                    </button>
+                    <button class="toggle-button" data-range="100-200" onclick="togglePrice(this)">
+                        <span class="range-label">£100 - £200</span>
+                        <span class="checkmark">✓</span>
+                    </button>
+                    <button class="toggle-button" data-range="200-500" onclick="togglePrice(this)">
+                        <span class="range-label">£200 - £500</span>
+                        <span class="checkmark">✓</span>
+                    </button>
+                    <button class="toggle-button" data-range="500+" onclick="togglePrice(this)">
+                        <span class="range-label">£500+</span>
+                        <span class="checkmark">✓</span>
+                    </button>
+                </div>
+                <button class="primary-button" onclick="proceedToAdventure()" disabled id="price-continue">Continue</button>
+            </div>
+        </div>
+
+        <!-- Adventure Level Screen -->
+        <div id="adventure-screen" class="screen">
+            <div class="screen-header">
+                <button class="back-button" onclick="goBack('price-screen')">←</button>
+                <h2>Choose Your Style</h2>
+            </div>
+            <div class="content-area">
+                <p class="instruction-text">How adventurous do you want to be?</p>
+                <div class="adventure-options">
+                    <button class="adventure-card" onclick="selectAdventure('safe')">
+                        <div class="adventure-icon">🎯</div>
+                        <h3>Safe</h3>
+                        <p>Stick to your favorites: Pinot Noir, Gamay, Chablis, Sancerre, Grüner Veltliner</p>
+                    </button>
+                    <button class="adventure-card" onclick="selectAdventure('curious')">
+                        <div class="adventure-icon">🔍</div>
+                        <h3>Curious</h3>
+                        <p>Explore similar styles: elegant reds, crisp mineral whites</p>
+                    </button>
+                    <button class="adventure-card" onclick="selectAdventure('adventurous')">
+                        <div class="adventure-icon">✨</div>
+                        <h3>Adventurous</h3>
+                        <p>Discover new varietals while avoiding heavy, bombastic wines</p>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Camera Screen -->
+        <div id="camera-screen" class="screen">
+            <div class="screen-header">
+                <button class="back-button" onclick="goBack('adventure-screen')">←</button>
+                <h2>Capture Menu</h2>
+                <span class="photo-counter"><span id="photo-count">0</span>/8</span>
+            </div>
+            <div class="camera-container">
+                <video id="camera-video" autoplay playsinline></video>
+                <canvas id="camera-canvas" style="display:none;"></canvas>
+                <div class="camera-overlay">
+                    <div id="blur-warning" class="blur-warning">⚠️ Image may be blurry</div>
+                </div>
+                <div class="camera-controls">
+                    <div class="control-row">
+                        <div class="control-group">
+                            <label>Zoom</label>
+                            <input type="range" id="zoom-control" min="1" max="3" step="0.1" value="1">
+                        </div>
+                        <div class="control-group">
+                            <label>Brightness</label>
+                            <input type="range" id="brightness-control" min="0.5" max="2" step="0.1" value="1">
+                        </div>
+                    </div>
+                    <div class="button-row">
+                        <button class="camera-button" onclick="capturePhoto()">
+                            <span class="camera-icon">📷</span>
+                            Capture
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="thumbnail-strip" id="thumbnail-strip"></div>
+            <div class="action-buttons">
+                <button class="secondary-button" onclick="clearPhotos()" id="clear-button" disabled>Clear All</button>
+                <button class="primary-button" onclick="analyzePhotos()" id="analyze-button" disabled>Analyze Menu</button>
+            </div>
+        </div>
+
+        <!-- Loading Screen -->
+        <div id="loading-screen" class="screen">
+            <div class="loading-container">
+                <div class="loading-spinner"></div>
+                <h2>Analyzing Your Menu</h2>
+                <p class="loading-text">Evaluating vintages, regions, and value...</p>
+            </div>
+        </div>
+
+        <!-- Results Screen -->
+        <div id="results-screen" class="screen">
+            <div class="screen-header">
+                <button class="back-button" onclick="goToWelcome()">←</button>
+                <h2>Recommendations</h2>
+            </div>
+            <div class="content-area">
+                <div id="results-container"></div>
+                <button class="primary-button" onclick="saveAndFinish()">Save & Finish</button>
+            </div>
+        </div>
+
+        <!-- History Screen -->
+        <div id="history-screen" class="screen">
+            <div class="screen-header">
+                <button class="back-button" onclick="goBack('welcome-screen')">←</button>
+                <h2>Analysis History</h2>
+            </div>
+            <div class="content-area">
+                <div id="history-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
