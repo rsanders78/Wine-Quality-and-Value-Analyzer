@@ -1,18 +1,8 @@
-{
-  "name": "Wine Value Analyzer",
-  "short_name": "Wine Analyzer",
-  "description": "Discover exceptional wines at the best prices",
-  "start_url": "/",
-  "display": "standalone",
-  "background_color": "#FFFFFF",
-  "theme_color": "#000000",
-  "orientation": "portrait",
-  "icons": [
-    {
-      "src": "icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
-    }
-  ]
-}
+"start_url": "/Wine-Quality-and-Value-Analyzer/",
+"scope": "/Wine-Quality-and-Value-Analyzer/",
+"icons": [
+  {
+    "src": "/Wine-Quality-and-Value-Analyzer/icons/icon-192.png",
+    ...
+  }
+]
